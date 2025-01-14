@@ -3,6 +3,7 @@ import User from  "../model/users.model.js"
 import bcrypt from "bcrypt"
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
+import nodemailer from "nodemailer"
 
 
 // cloudinary image upload k lye -------->>>>
@@ -25,6 +26,36 @@ const generateAccesstoken = (user) =>{
    expiresIn : "6h"
   })
  }
+
+//  Node mailer use for sending email ------->>>>>>
+
+ const transporter = nodemailer.createTransport({
+  host: "smtp.ethereal.email",
+  port: 587,
+  secure: false, // true for port 465, false for other ports
+  auth: {
+    user: "carol.baumbach25@ethereal.email",
+    pass: "3uDPxHucjx6mH2X52T",
+  },
+});
+
+// Email sending function 
+const sendEmail = async (to, subject, text, html) => {
+  try {
+    const info = await transporter.sendMail({
+      from: '"Your App Name 👻" <maddison53@ethereal.email>', 
+      to, 
+      subject, 
+      text, 
+      html, 
+    });
+
+    console.log("Message sent: %s", info.messageId);
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+};
+
 
 //  register User-------->>>>>
 
@@ -59,6 +90,14 @@ const registerUser = async (req, res) => {
       password,
       profilePicture,
     });
+
+      // Send welcome email
+      const subject = "Welcome to Our Platform!";
+      const text = `Hi ${fullName},\n\nThank you for registering with us. We're excited to have you onboard!\n\nBest Regards,\nYour Team`;
+      const html = `<h1>Welcome, ${fullName}!</h1><p>Thank you for registering with us. We're excited to have you onboard!</p>`;
+  
+      await sendEmail(email, subject, text, html);
+
     res.json({
       message: "User registered successfully",
       data: createUser,
@@ -79,7 +118,7 @@ if (!password) return res.status(400).json({ message: "password required" });
 const user = await User.findOne({email})
 if(!user)return res.status(404).json({messege : "user no found"})
 
-  // password compare krwayenga bcrypt
+  // password compare krwayga bcrypt 
 const ispasswordValid = bcrypt.compare(password,user.password)  
 if(!ispasswordValid) return res.status().json({messege : "incorrect password"})
 
@@ -100,7 +139,6 @@ data : user
 // logout user --------->>>>>
 
 const logoutUser = (req, res) => {
-  // Check if the user is authenticated
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized. Please log in first." });
   }
@@ -113,17 +151,15 @@ const logoutUser = (req, res) => {
 };
 
 
-// Get all Users
+// Get all Users -------->>>>>
+
 const getAllUsers = async (req, res) => {
   try {
-    // Fetch all users from the database
     const users = await User.find({});
 
     if (users.length === 0) {
       return res.status(200).json({ message: "No users found!" });
     }
-
-    // Send response with users data
     return res.status(200).json({
       message: "Users fetched successfully!",
       data: users,
@@ -161,6 +197,7 @@ const refreshToken = async (req,res)=>{
   
   }
 
+// upload image on cloudinary  and delete in upload folder ------->>>>>
 
 const uploadImageToCloudinary = async (localpath) => {
   try {
