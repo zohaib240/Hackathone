@@ -3,8 +3,6 @@ import User from  "../model/users.model.js"
 import bcrypt from "bcrypt"
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
-import nodemailer from "nodemailer"
-
 
 // cloudinary image upload k lye -------->>>>
 
@@ -26,36 +24,6 @@ const generateAccesstoken = (user) =>{
    expiresIn : "6h"
   })
  }
-
-//  Node mailer use for sending email ------->>>>>>
-
- const transporter = nodemailer.createTransport({
-  host: "smtp.ethereal.email",
-  port: 587,
-  secure: false, // true for port 465, false for other ports
-  auth: {
-    user: "carol.baumbach25@ethereal.email",
-    pass: "3uDPxHucjx6mH2X52T",
-  },
-});
-
-// Email sending function 
-const sendEmail = async (to, subject, text, html) => {
-  try {
-    const info = await transporter.sendMail({
-      from: '"Your App Name 👻" <maddison53@ethereal.email>', 
-      to, 
-      subject, 
-      text, 
-      html, 
-    });
-
-    console.log("Message sent: %s", info.messageId);
-  } catch (error) {
-    console.error("Error sending email:", error);
-  }
-};
-
 
 //  register User-------->>>>>
 
@@ -90,14 +58,6 @@ const registerUser = async (req, res) => {
       password,
       profilePicture,
     });
-
-      // Send welcome email
-      const subject = "Welcome to Our Platform!";
-      const text = `Hi ${fullName},\n\nThank you for registering with us. We're excited to have you onboard!\n\nBest Regards,\nYour Team`;
-      const html = `<h1>Welcome, ${fullName}!</h1><p>Thank you for registering with us. We're excited to have you onboard!</p>`;
-  
-      await sendEmail(email, subject, text, html);
-
     res.json({
       message: "User registered successfully",
       data: createUser,
@@ -149,6 +109,33 @@ const logoutUser = (req, res) => {
   });
   res.json({ message: "Logout successful." });
 };
+
+// get singleUser ------->>>>>
+
+const singleUser = async (req, res) => {
+  const decodedeUser = req.user;
+  console.log(decodedeUser);
+  console.log("Decoded User:", req.user);  // ✅ CHECK Karo Backend Console Me
+  
+  try {
+    if (!decodedeUser) {
+      return res.status(401).json({ message: "Unauthorized, no user found in token" });
+    }
+
+    const user = await User.findById(decodedeUser.id).select('-password -publishedBlogs');
+    if (!user) {
+      return res.status(404).json({ message: "User not found in database" });
+    }
+
+    res.status(200).json({ user }); // ✅ Wrap user in an object
+    console.log("Fetched User:", user); // ✅ CHECK THIS
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 
 // Get all Users -------->>>>>
@@ -217,4 +204,4 @@ const uploadImageToCloudinary = async (localpath) => {
 };
 
 
-export {registerUser,loginUser,logoutUser,refreshToken,getAllUsers}
+export {registerUser,loginUser,logoutUser,refreshToken,singleUser,getAllUsers}
